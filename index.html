@@ -4,529 +4,76 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>宫斗段位测评 · 你在后宫能活到第几集？</title>
-  <!-- 使用 html2canvas 生成分享长图 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* 全局重置与基础样式 */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    }
-
-    body {
-      background: #1a0e0b;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      color: #3d2b1f;
-    }
-
-    /* 主容器，模拟宣纸/古籍质感 */
-    .app-container {
-      max-width: 500px;
-      width: 100%;
-      background: #fcf6e8;
-      background-image: radial-gradient(circle at 20% 30%, rgba(180, 150, 100, 0.08) 0%, transparent 30%),
-                        radial-gradient(circle at 80% 70%, rgba(180, 150, 100, 0.08) 0%, transparent 30%);
-      border-radius: 32px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px #b89e6b inset;
-      padding: 28px 22px 32px;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-
-    /* 装饰性边框纹理 */
-    .app-container::before {
-      content: "";
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
-      border: 1px solid rgba(180, 140, 70, 0.3);
-      border-radius: 24px;
-      pointer-events: none;
-    }
-
-    /* 通用标题 */
-    .title {
-      font-size: 26px;
-      font-weight: 700;
-      text-align: center;
-      color: #4d2e1b;
-      letter-spacing: 2px;
-      text-shadow: 1px 1px 0 rgba(200, 170, 120, 0.5);
-      margin-bottom: 8px;
-      font-family: 'STKaiti', 'KaiTi', '楷体', serif;
-    }
-
-    .subhead {
-      text-align: center;
-      font-size: 14px;
-      color: #7b5e42;
-      border-bottom: 1px dashed #c8ad7a;
-      padding-bottom: 16px;
-      margin-bottom: 20px;
-      font-style: italic;
-    }
-
-    /* 状态面板 */
-    .panel {
-      display: none;
-      animation: fadeIn 0.35s ease;
-    }
-
-    .panel.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* 密码页样式 */
-    .password-box {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      align-items: center;
-      padding: 20px 0;
-    }
-
-    .password-box input {
-      width: 100%;
-      padding: 16px 18px;
-      font-size: 18px;
-      text-align: center;
-      letter-spacing: 4px;
-      background: #f2e8d5;
-      border: 1px solid #b99f73;
-      border-radius: 60px;
-      outline: none;
-      color: #3d2b1f;
-      font-weight: 500;
-      box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.05);
-    }
-
-    .password-box input::placeholder {
-      color: #b8a68b;
-      letter-spacing: normal;
-      font-size: 16px;
-    }
-
-    .password-box .hint {
-      font-size: 13px;
-      color: #9b8465;
-      text-align: center;
-      line-height: 1.6;
-    }
-
-    .btn {
-      background: #6f4e2e;
-      color: #fdf3e0;
-      border: none;
-      padding: 16px 32px;
-      border-radius: 50px;
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      cursor: pointer;
-      width: 100%;
-      box-shadow: 0 6px 0 #3f2c18, 0 8px 14px rgba(0, 0, 0, 0.3);
-      transition: all 0.1s ease;
-      font-family: 'STKaiti', 'KaiTi', serif;
-    }
-
-    .btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #3f2c18, 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .btn.secondary {
-      background: #c8ad7a;
-      color: #2d1e12;
-      box-shadow: 0 4px 0 #8b7042, 0 6px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .btn.secondary:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 #8b7042, 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 #3f2c18;
-      cursor: not-allowed;
-    }
-
-    /* 进度条 */
-    .progress-area {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      font-size: 14px;
-      color: #7b5e42;
-      font-weight: 500;
-    }
-
-    .progress-bar-bg {
-      flex: 1;
-      height: 8px;
-      background: #e6d8c0;
-      border-radius: 10px;
-      margin: 0 12px;
-      overflow: hidden;
-      border: 1px solid #cfbc9b;
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #b8883c, #dbb063);
-      border-radius: 10px;
-      transition: width 0.3s ease;
-    }
-
-    /* 题目卡片 */
-    .question-card {
-      margin-bottom: 18px;
-    }
-
-    .q-text {
-      font-size: 17px;
-      line-height: 1.6;
-      font-weight: 600;
-      color: #3d2b1f;
-      margin-bottom: 18px;
-      padding: 0 4px;
-      font-family: 'STKaiti', 'KaiTi', serif;
-    }
-
-    .options {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .option {
-      background: #f6efdf;
-      border: 1.5px solid #dac29b;
-      border-radius: 18px;
-      padding: 16px 18px;
-      font-size: 15px;
-      line-height: 1.5;
-      color: #2f1f12;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-align: left;
-    }
-
-    .option:active {
-      background: #e6d7bc;
-    }
-
-    .option.selected {
-      background: #e2cfab;
-      border-color: #8b6c3f;
-      box-shadow: 0 0 0 2px rgba(139, 108, 63, 0.2);
-    }
-
-    .option .letter {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: #b39264;
-      color: #fdf3e0;
-      border-radius: 50%;
-      font-weight: 700;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-
-    .option.selected .letter {
-      background: #6f4e2e;
-    }
-
-    /* 导航按钮 */
-    .nav-btns {
-      display: flex;
-      gap: 14px;
-      margin-top: 24px;
-    }
-
-    .nav-btns .btn {
-      flex: 1;
-      padding: 14px 0;
-      font-size: 16px;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 #3f2c18;
-      cursor: not-allowed;
-    }
-
-    /* 结果页 */
-    .result-container {
-      text-align: center;
-    }
-
-    .rank-badge {
-      display: inline-block;
-      background: #4d2e1b;
-      color: #f7e9cf;
-      padding: 8px 28px;
-      border-radius: 40px;
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      margin-bottom: 16px;
-      border: 2px solid #b39264;
-      font-family: 'STKaiti', 'KaiTi', serif;
-    }
-
-    .rank-title {
-      font-size: 34px;
-      font-weight: 800;
-      color: #6f3f1a;
-      line-height: 1.2;
-      margin-bottom: 6px;
-      font-family: 'STKaiti', 'KaiTi', serif;
-    }
-
-    .rank-sub {
-      font-size: 16px;
-      color: #8b6c4a;
-      margin-bottom: 16px;
-      font-style: italic;
-    }
-
-    .survival {
-      background: #e9dbc2;
-      border-radius: 40px;
-      padding: 10px 0;
-      font-size: 18px;
-      font-weight: 700;
-      color: #4d2e1b;
-      margin-bottom: 22px;
-      border: 1px dashed #a58658;
-    }
-
-    .tagline {
-      font-size: 18px;
-      font-weight: 600;
-      color: #4d2e1b;
-      margin-bottom: 14px;
-      font-family: 'STKaiti', 'KaiTi', serif;
-      padding: 0 10px;
-    }
-
-    .analysis-block {
-      background: #f2e8d5;
-      border-radius: 20px;
-      padding: 18px 16px;
-      text-align: left;
-      margin-bottom: 16px;
-      border-left: 6px solid #b39264;
-      font-size: 15px;
-      line-height: 1.7;
-      color: #2f1f12;
-    }
-
-    .analysis-block strong {
-      color: #6f3f1a;
-    }
-
-    .theory-box {
-      background: #e6d8c0;
-      border-radius: 16px;
-      padding: 14px 16px;
-      text-align: left;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #4d3a28;
-      margin-bottom: 22px;
-      border: 1px solid #c8ad7a;
-    }
-
-    .theory-box .theory-label {
-      font-weight: 700;
-      color: #6f4e2e;
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    /* 分享按钮组 */
-    .share-btns {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    .share-btns .btn {
-      padding: 16px 0;
-      font-size: 17px;
-    }
-
-    /* 生成图片时的画板（隐藏） */
-    #capture-area {
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 400px;
-      background: #fcf6e8;
-      padding: 28px 22px;
-      border-radius: 32px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      color: #3d2b1f;
-      z-index: -1;
-    }
-
-    #capture-area .capture-rank {
-      text-align: center;
-    }
-
-    #capture-area .capture-badge {
-      display: inline-block;
-      background: #4d2e1b;
-      color: #f7e9cf;
-      padding: 6px 24px;
-      border-radius: 40px;
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      border: 2px solid #b39264;
-    }
-
-    #capture-area .capture-title {
-      font-size: 30px;
-      font-weight: 800;
-      color: #6f3f1a;
-      margin-bottom: 4px;
-      font-family: 'STKaiti', 'KaiTi', serif;
-    }
-
-    #capture-area .capture-sub {
-      font-size: 14px;
-      color: #8b6c4a;
-      margin-bottom: 10px;
-    }
-
-    #capture-area .capture-survival {
-      background: #e9dbc2;
-      border-radius: 30px;
-      padding: 8px 0;
-      font-size: 16px;
-      font-weight: 700;
-      color: #4d2e1b;
-      margin-bottom: 14px;
-      border: 1px dashed #a58658;
-    }
-
-    #capture-area .capture-tagline {
-      font-size: 16px;
-      font-weight: 600;
-      color: #4d2e1b;
-      margin-bottom: 12px;
-      font-family: 'STKaiti', 'KaiTi', serif;
-    }
-
-    #capture-area .capture-analysis {
-      background: #f2e8d5;
-      border-radius: 16px;
-      padding: 16px;
-      text-align: left;
-      margin-bottom: 12px;
-      border-left: 5px solid #b39264;
-      font-size: 14px;
-      line-height: 1.7;
-      color: #2f1f12;
-    }
-
-    #capture-area .capture-theory {
-      background: #e6d8c0;
-      border-radius: 14px;
-      padding: 12px 14px;
-      text-align: left;
-      font-size: 12px;
-      line-height: 1.6;
-      color: #4d3a28;
-      border: 1px solid #c8ad7a;
-    }
-
-    /* 复制提示 */
-    .toast {
-      position: fixed;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #3d2b1f;
-      color: #fcf6e8;
-      padding: 12px 28px;
-      border-radius: 40px;
-      font-size: 15px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 9999;
-      pointer-events: none;
-      white-space: nowrap;
-      border: 1px solid #b39264;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-    }
-
-    .toast.show {
-      opacity: 1;
-    }
-
-    /* 适配小屏幕 */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; }
+    body { background: #1a0e0b; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 12px; color: #3d2b1f; }
+    .app-container { max-width: 500px; width: 100%; background: #fcf6e8; background-image: radial-gradient(circle at 20% 30%, rgba(180,150,100,0.08) 0%, transparent 30%), radial-gradient(circle at 80% 70%, rgba(180,150,100,0.08) 0%, transparent 30%); border-radius: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 2px #b89e6b inset; padding: 28px 22px 32px; position: relative; overflow: hidden; transition: all 0.3s ease; }
+    .app-container::before { content: ""; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border: 1px solid rgba(180,140,70,0.3); border-radius: 24px; pointer-events: none; }
+    .title { font-size: 26px; font-weight: 700; text-align: center; color: #4d2e1b; letter-spacing: 2px; text-shadow: 1px 1px 0 rgba(200,170,120,0.5); margin-bottom: 8px; font-family: 'STKaiti', 'KaiTi', '楷体', serif; }
+    .subhead { text-align: center; font-size: 14px; color: #7b5e42; border-bottom: 1px dashed #c8ad7a; padding-bottom: 16px; margin-bottom: 20px; font-style: italic; }
+    .panel { display: none; animation: fadeIn 0.35s ease; }
+    .panel.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .password-box { display: flex; flex-direction: column; gap: 18px; align-items: center; padding: 20px 0; }
+    .password-box input { width: 100%; padding: 16px 18px; font-size: 18px; text-align: center; letter-spacing: 4px; background: #f2e8d5; border: 1px solid #b99f73; border-radius: 60px; outline: none; color: #3d2b1f; font-weight: 500; box-shadow: inset 2px 2px 6px rgba(0,0,0,0.05); }
+    .password-box input::placeholder { color: #b8a68b; letter-spacing: normal; font-size: 16px; }
+    .password-box .hint { font-size: 13px; color: #9b8465; text-align: center; line-height: 1.6; }
+    .btn { background: #6f4e2e; color: #fdf3e0; border: none; padding: 16px 32px; border-radius: 50px; font-size: 18px; font-weight: 600; letter-spacing: 2px; cursor: pointer; width: 100%; box-shadow: 0 6px 0 #3f2c18, 0 8px 14px rgba(0,0,0,0.3); transition: all 0.1s ease; font-family: 'STKaiti', 'KaiTi', serif; }
+    .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #3f2c18, 0 4px 8px rgba(0,0,0,0.3); }
+    .btn.secondary { background: #c8ad7a; color: #2d1e12; box-shadow: 0 4px 0 #8b7042, 0 6px 10px rgba(0,0,0,0.2); }
+    .btn.secondary:active { transform: translateY(2px); box-shadow: 0 2px 0 #8b7042, 0 4px 8px rgba(0,0,0,0.2); }
+    .btn:disabled { opacity: 0.5; transform: translateY(2px); box-shadow: 0 2px 0 #3f2c18; cursor: not-allowed; }
+    .progress-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 14px; color: #7b5e42; font-weight: 500; }
+    .progress-bar-bg { flex: 1; height: 8px; background: #e6d8c0; border-radius: 10px; margin: 0 12px; overflow: hidden; border: 1px solid #cfbc9b; }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #b8883c, #dbb063); border-radius: 10px; transition: width 0.3s ease; }
+    .question-card { margin-bottom: 18px; }
+    .q-text { font-size: 17px; line-height: 1.6; font-weight: 600; color: #3d2b1f; margin-bottom: 18px; padding: 0 4px; font-family: 'STKaiti', 'KaiTi', serif; }
+    .options { display: flex; flex-direction: column; gap: 12px; }
+    .option { background: #f6efdf; border: 1.5px solid #dac29b; border-radius: 18px; padding: 16px 18px; font-size: 15px; line-height: 1.5; color: #2f1f12; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 12px; text-align: left; }
+    .option:active { background: #e6d7bc; }
+    .option.selected { background: #e2cfab; border-color: #8b6c3f; box-shadow: 0 0 0 2px rgba(139,108,63,0.2); }
+    .option .letter { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #b39264; color: #fdf3e0; border-radius: 50%; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .option.selected .letter { background: #6f4e2e; }
+    .nav-btns { display: flex; gap: 14px; margin-top: 24px; }
+    .nav-btns .btn { flex: 1; padding: 14px 0; font-size: 16px; }
+    .result-container { text-align: center; }
+    .rank-badge { display: inline-block; background: #4d2e1b; color: #f7e9cf; padding: 8px 28px; border-radius: 40px; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin-bottom: 16px; border: 2px solid #b39264; font-family: 'STKaiti', 'KaiTi', serif; }
+    .rank-title { font-size: 34px; font-weight: 800; color: #6f3f1a; line-height: 1.2; margin-bottom: 6px; font-family: 'STKaiti', 'KaiTi', serif; }
+    .rank-sub { font-size: 16px; color: #8b6c4a; margin-bottom: 16px; font-style: italic; }
+    .survival { background: #e9dbc2; border-radius: 40px; padding: 10px 0; font-size: 18px; font-weight: 700; color: #4d2e1b; margin-bottom: 22px; border: 1px dashed #a58658; }
+    .tagline { font-size: 18px; font-weight: 600; color: #4d2e1b; margin-bottom: 14px; font-family: 'STKaiti', 'KaiTi', serif; padding: 0 10px; }
+    .analysis-block { background: #f2e8d5; border-radius: 20px; padding: 18px 16px; text-align: left; margin-bottom: 16px; border-left: 6px solid #b39264; font-size: 15px; line-height: 1.7; color: #2f1f12; }
+    .analysis-block strong { color: #6f3f1a; }
+    .theory-box { background: #e6d8c0; border-radius: 16px; padding: 14px 16px; text-align: left; font-size: 14px; line-height: 1.6; color: #4d3a28; margin-bottom: 22px; border: 1px solid #c8ad7a; }
+    .theory-box .theory-label { font-weight: 700; color: #6f4e2e; display: block; margin-bottom: 6px; }
+    .share-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+    .share-btns .btn { padding: 16px 0; font-size: 17px; }
+    #capture-area { position: fixed; left: -9999px; top: 0; width: 400px; background: #fcf6e8; padding: 28px 22px; border-radius: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; color: #3d2b1f; z-index: -1; }
+    #capture-area .capture-rank { text-align: center; }
+    #capture-area .capture-badge { display: inline-block; background: #4d2e1b; color: #f7e9cf; padding: 6px 24px; border-radius: 40px; font-size: 16px; font-weight: 700; margin-bottom: 10px; border: 2px solid #b39264; }
+    #capture-area .capture-title { font-size: 30px; font-weight: 800; color: #6f3f1a; margin-bottom: 4px; font-family: 'STKaiti', 'KaiTi', serif; }
+    #capture-area .capture-sub { font-size: 14px; color: #8b6c4a; margin-bottom: 10px; }
+    #capture-area .capture-survival { background: #e9dbc2; border-radius: 30px; padding: 8px 0; font-size: 16px; font-weight: 700; color: #4d2e1b; margin-bottom: 14px; border: 1px dashed #a58658; }
+    #capture-area .capture-tagline { font-size: 16px; font-weight: 600; color: #4d2e1b; margin-bottom: 12px; font-family: 'STKaiti', 'KaiTi', serif; }
+    #capture-area .capture-analysis { background: #f2e8d5; border-radius: 16px; padding: 16px; text-align: left; margin-bottom: 12px; border-left: 5px solid #b39264; font-size: 14px; line-height: 1.7; color: #2f1f12; }
+    #capture-area .capture-theory { background: #e6d8c0; border-radius: 14px; padding: 12px 14px; text-align: left; font-size: 12px; line-height: 1.6; color: #4d3a28; border: 1px solid #c8ad7a; }
+    .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #3d2b1f; color: #fcf6e8; padding: 12px 28px; border-radius: 40px; font-size: 15px; opacity: 0; transition: opacity 0.3s ease; z-index: 9999; pointer-events: none; white-space: nowrap; border: 1px solid #b39264; box-shadow: 0 6px 16px rgba(0,0,0,0.5); }
+    .toast.show { opacity: 1; }
     @media (max-width: 420px) {
-      .app-container {
-        padding: 22px 16px 26px;
-        border-radius: 28px;
-      }
-      .title {
-        font-size: 22px;
-      }
-      .q-text {
-        font-size: 15px;
-      }
-      .option {
-        padding: 14px 14px;
-        font-size: 14px;
-      }
-      .rank-title {
-        font-size: 28px;
-      }
-      .btn {
-        font-size: 16px;
-        padding: 14px 24px;
-      }
+      .app-container { padding: 22px 16px 26px; border-radius: 28px; }
+      .title { font-size: 22px; }
+      .q-text { font-size: 15px; }
+      .option { padding: 14px 14px; font-size: 14px; }
+      .rank-title { font-size: 28px; }
+      .btn { font-size: 16px; padding: 14px 24px; }
     }
   </style>
 </head>
 <body>
 
   <div class="app-container" id="appContainer">
-    <!-- 密码验证面板 -->
     <div id="panel-password" class="panel active">
       <div class="title">宫斗段位测评</div>
       <div class="subhead">你在后宫能活到第几集？</div>
@@ -538,7 +85,6 @@
       </div>
     </div>
 
-    <!-- 答题面板 -->
     <div id="panel-quiz" class="panel">
       <div class="progress-area">
         <span id="currentQDisplay">1/15</span>
@@ -547,42 +93,30 @@
         </div>
         <span>宫斗段位</span>
       </div>
-      <div class="question-card" id="questionCard">
-        <!-- 题目动态渲染 -->
-      </div>
+      <div class="question-card" id="questionCard"></div>
       <div class="nav-btns">
         <button class="btn secondary" id="prevBtn" disabled>上一题</button>
         <button class="btn" id="nextBtn" disabled>下一题</button>
       </div>
     </div>
 
-    <!-- 结果面板 -->
     <div id="panel-result" class="panel">
-      <div class="result-container" id="resultContent">
-        <!-- 结果动态渲染 -->
-      </div>
+      <div class="result-container" id="resultContent"></div>
     </div>
   </div>
 
-  <!-- 隐藏的截图区域（用于生成图片） -->
-  <div id="capture-area" style="display: none;">
-    <!-- 由JS动态填充 -->
-  </div>
-
-  <!-- 轻提示 -->
+  <div id="capture-area" style="display: none;"></div>
   <div id="toast" class="toast"></div>
 
   <script>
     (function(){
-      // ---------- Supabase 初始化 ----------
+      // ========== Supabase 初始化 ==========
       const SUPABASE_URL = 'https://qwkfbqxrxkxzopebdjcx.supabase.co';
       const SUPABASE_ANON_KEY = 'sb_publishable_zlofcT0_prOwCJmKDbGHfg_l7MJQuLK';
       const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      // ---------- 数据定义 ----------
-      // 15道题目（纯古风，已按维度组织）
+      // ========== 题目数据 ==========
       const QUESTIONS = [
-        // 维度1: 信息敏感度
         { q: "你刚入宫，午间用膳时听到两个宫女在小声议论：“听说皇后娘娘和贵妃娘娘最近为了协理六宫的权柄，闹得很僵。”你会怎么做？",
           options: [
             { text: "默默记下，回去翻查内务府的簿子，摸清两位娘娘背后的家世和势力", score: 3 },
@@ -607,7 +141,6 @@
             { text: "暗中打听这个嫔妃的底细，看她有没有什么把柄可以留着", score: 1 }
           ]
         },
-        // 维度2: 结盟能力
         { q: "宫里新来了一位贵人，性子清冷孤傲，不跟任何人来往。几位资历老的嫔妃都不喜欢她，想联手给她点颜色看看。你的态度是：",
           options: [
             { text: "主动接近她，看看她背后有没有靠山，能结交就结交", score: 3 },
@@ -632,7 +165,6 @@
             { text: "忍了，但从此不再跟她来往", score: 1 }
           ]
         },
-        // 维度3: 情绪伪装力
         { q: "皇后在众人面前训斥了你一顿，但你心里清楚，这件事根本是皇后自己交代错了。此时你的第一反应是：",
           options: [
             { text: "面色如常，先认错：“是臣妾考虑不周，回去马上改”", score: 3 },
@@ -657,7 +189,6 @@
             { text: "当场回一句：“那下次这种铺垫的活，娘娘宫里的人也来帮帮忙？”", score: 2 }
           ]
         },
-        // 维度4: 危机反杀力
         { q: "有人告发你私通外臣，皇后下令让你禁足，配合彻查，但你确实没做过。你会：",
           options: [
             { text: "第一时间托人找宫外可信的关系，同时把所有往来书信、时辰记录整理清楚", score: 3 },
@@ -682,7 +213,6 @@
             { text: "主动向上头请拨人手和银两，把冷宫做成自己的地盘", score: 2 }
           ]
         },
-        // 维度5: 权力边界感
         { q: "后宫里，你的直属主位是贵妃，脾气暴但护短；而皇后表面温和，手段却极狠。两人向来不和。你手上有一件差事，需要皇后宫里的配合。你会先找谁？",
           options: [
             { text: "先向贵妃报备，让她知道你要去皇后那边走动", score: 3 },
@@ -699,7 +229,6 @@
             { text: "观察她跟谁走得近，迂回建立关系", score: 2 }
           ]
         },
-        // 维度6: 长期忍耐力
         { q: "你入宫三年，办事得力，但两次晋位份都被资历不如你的人抢了先。皇后每次都说“下次一定考虑你”。你会：",
           options: [
             { text: "继续做好手头的事，同时悄悄为自己铺后路，把主动权握在手里", score: 3 },
@@ -710,7 +239,7 @@
         }
       ];
 
-      // 段位定义
+      // ========== 段位定义 ==========
       const RANKS = [
         { min: 38, max: 45, badge: "王者", title: "太后级操盘手", survival: "全剧终，笑到最后",
           tagline: "你以为我在退让，其实我在布局",
@@ -750,17 +279,16 @@
         }
       ];
 
-      // 当前状态
+      // ========== 状态 ==========
       let state = {
         password: "",
-        remaining: 0,
         currentQ: 0,
         answers: new Array(QUESTIONS.length).fill(null),
         totalScore: 0,
         rank: null
       };
 
-      // DOM 元素
+      // ========== DOM ==========
       const panelPassword = document.getElementById('panel-password');
       const panelQuiz = document.getElementById('panel-quiz');
       const panelResult = document.getElementById('panel-result');
@@ -770,4 +298,260 @@
       const currentQDisplay = document.getElementById('currentQDisplay');
       const progressFill = document.getElementById('progressFill');
       const questionCard = document.getElementById('questionCard');
-      const
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const resultContent = document.getElementById('resultContent');
+      const toast = document.getElementById('toast');
+      const captureArea = document.getElementById('capture-area');
+
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+
+      function switchPanel(panel) {
+        panelPassword.classList.remove('active');
+        panelQuiz.classList.remove('active');
+        panelResult.classList.remove('active');
+        panel.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // ========== Supabase 密码验证 ==========
+      async function verifyPassword(pwd) {
+        try {
+          const { data, error } = await supabase.rpc('use_password', { pwd: pwd });
+          if (error) {
+            console.error('RPC error:', error);
+            return { ok: false, msg: '系统错误，请稍后重试' };
+          }
+          if (data === -1) {
+            return { ok: false, msg: '密码错误或次数已用完' };
+          }
+          return { ok: true, remaining: data };
+        } catch (e) {
+          console.error('Exception:', e);
+          return { ok: false, msg: '网络错误，请稍后重试' };
+        }
+      }
+
+      // ========== 开始测试按钮 ==========
+      startBtn.addEventListener('click', async function() {
+        const pwd = passwordInput.value.trim().toLowerCase();
+        passwordError.textContent = '';
+
+        if (!pwd) {
+          passwordError.textContent = '请输入密码';
+          return;
+        }
+
+        startBtn.disabled = true;
+        startBtn.textContent = '验证中...';
+
+        const result = await verifyPassword(pwd);
+
+        startBtn.disabled = false;
+        startBtn.textContent = '开始测试';
+
+        if (!result.ok) {
+          passwordError.textContent = result.msg;
+          return;
+        }
+
+        // 验证通过
+        state.password = pwd;
+        state.currentQ = 0;
+        state.answers = new Array(QUESTIONS.length).fill(null);
+        state.totalScore = 0;
+        state.rank = null;
+
+        switchPanel(panelQuiz);
+        renderQuestion();
+      });
+
+      passwordInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') startBtn.click();
+      });
+
+      // ========== 渲染题目 ==========
+      function renderQuestion() {
+        const idx = state.currentQ;
+        const q = QUESTIONS[idx];
+        const selected = state.answers[idx];
+        currentQDisplay.textContent = (idx + 1) + '/' + QUESTIONS.length;
+        progressFill.style.width = ((idx) / QUESTIONS.length * 100) + '%';
+
+        let html = `<div class="q-text">${q.q}</div><div class="options">`;
+        q.options.forEach((opt, optIdx) => {
+          const letter = String.fromCharCode(65 + optIdx);
+          const isSelected = (selected === optIdx);
+          html += `<div class="option ${isSelected ? 'selected' : ''}" data-opt-index="${optIdx}">
+            <span class="letter">${letter}</span>
+            <span>${opt.text}</span>
+          </div>`;
+        });
+        html += `</div>`;
+        questionCard.innerHTML = html;
+
+        questionCard.querySelectorAll('.option').forEach(el => {
+          el.addEventListener('click', function() {
+            const optIndex = parseInt(this.dataset.optIndex);
+            state.answers[idx] = optIndex;
+            renderQuestion();
+          });
+        });
+
+        updateNavButtons();
+      }
+
+      function updateNavButtons() {
+        const idx = state.currentQ;
+        const hasAnswer = state.answers[idx] !== null;
+        prevBtn.disabled = (idx === 0);
+        if (idx === QUESTIONS.length - 1) {
+          nextBtn.textContent = '查看结果';
+        } else {
+          nextBtn.textContent = '下一题';
+        }
+        nextBtn.disabled = !hasAnswer;
+      }
+
+      prevBtn.addEventListener('click', function() {
+        if (state.currentQ > 0) {
+          state.currentQ--;
+          renderQuestion();
+        }
+      });
+
+      nextBtn.addEventListener('click', function() {
+        const idx = state.currentQ;
+        if (state.answers[idx] === null) return;
+
+        if (idx === QUESTIONS.length - 1) {
+          let total = 0;
+          state.answers.forEach((ans, qIdx) => {
+            if (ans !== null) total += QUESTIONS[qIdx].options[ans].score;
+          });
+          state.totalScore = total;
+          state.rank = RANKS.find(r => total >= r.min && total <= r.max) || RANKS[RANKS.length - 1];
+          showResult();
+        } else {
+          state.currentQ++;
+          renderQuestion();
+        }
+      });
+
+      // ========== 显示结果 ==========
+      function showResult() {
+        const rank = state.rank;
+        const total = state.totalScore;
+
+        let html = `
+          <div class="rank-badge">${rank.badge}段位</div>
+          <div class="rank-title">${rank.title}</div>
+          <div class="rank-sub">宫斗生存集数：${rank.survival}</div>
+          <div class="survival">总分：${total} / 45</div>
+          <div class="tagline">「${rank.tagline}」</div>
+          <div class="analysis-block">
+            <strong>🎭 宫斗画像</strong><br>${rank.analysis}
+          </div>
+          <div class="theory-box">
+            <span class="theory-label">📚 理论依据 · 社会交换 & 权力依赖</span>
+            ${rank.theory}
+          </div>
+          <div class="analysis-block">
+            <strong>💡 制胜锦囊</strong><br>${rank.advice}
+          </div>
+          <div class="share-btns">
+            <button class="btn secondary" id="saveImageBtn">📸 保存结果长图</button>
+            <button class="btn secondary" id="copyLinkBtn">🔗 复制分享链接</button>
+          </div>
+        `;
+        resultContent.innerHTML = html;
+        switchPanel(panelResult);
+
+        document.getElementById('saveImageBtn').addEventListener('click', generateAndDownloadImage);
+        document.getElementById('copyLinkBtn').addEventListener('click', copyShareLink);
+      }
+
+      // ========== 保存长图 ==========
+      function generateAndDownloadImage() {
+        const rank = state.rank;
+        const total = state.totalScore;
+
+        captureArea.innerHTML = `
+          <div class="capture-rank">
+            <div class="capture-badge">${rank.badge}段位</div>
+            <div class="capture-title">${rank.title}</div>
+            <div class="capture-sub">宫斗生存集数：${rank.survival}</div>
+            <div class="capture-survival">总分：${total} / 45</div>
+            <div class="capture-tagline">「${rank.tagline}」</div>
+            <div class="capture-analysis"><strong>🎭 宫斗画像</strong><br>${rank.analysis}</div>
+            <div class="capture-theory"><strong>📚 理论依据</strong><br>${rank.theory}</div>
+            <div class="capture-analysis" style="border-left-color:#c8ad7a;"><strong>💡 制胜锦囊</strong><br>${rank.advice}</div>
+            <div style="margin-top:16px;text-align:center;font-size:12px;color:#9b8465;border-top:1px dashed #c8ad7a;padding-top:10px;">
+              宫斗段位测评 · 你在后宫能活到第几集？
+            </div>
+          </div>
+        `;
+        captureArea.style.display = 'block';
+
+        html2canvas(captureArea, {
+          scale: 1.5,
+          backgroundColor: '#fcf6e8',
+          allowTaint: false,
+          useCORS: true,
+          logging: false
+        }).then(canvas => {
+          captureArea.style.display = 'none';
+          const link = document.createElement('a');
+          link.download = `宫斗段位_${rank.title}_${Date.now()}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          showToast('长图已保存');
+        }).catch(err => {
+          captureArea.style.display = 'none';
+          console.error(err);
+          showToast('生成图片失败，请重试');
+        });
+      }
+
+      // ========== 复制分享 ==========
+      function copyShareLink() {
+        const rank = state.rank;
+        const total = state.totalScore;
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareText = `我在【宫斗段位测评】中测出了「${rank.badge}·${rank.title}」，总分${total}/45，生存集数：${rank.survival}。你是第几段？快来测测！`;
+        const shareUrl = `${baseUrl}?result=${encodeURIComponent(rank.badge)}&score=${total}`;
+        const fullText = `${shareText}\n${shareUrl}`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(fullText).then(() => {
+            showToast('分享链接已复制');
+          }).catch(() => fallbackCopy(fullText));
+        } else {
+          fallbackCopy(fullText);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('分享链接已复制');
+        } catch (e) {
+          showToast('复制失败，请手动截图分享');
+        }
+        document.body.removeChild(textarea);
+      }
+
+    })();
+  </script>
+</body>
+</html>
