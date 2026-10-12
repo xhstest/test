@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>宫斗段位测评 · 你在后宫能活到第几集？</title>
+  <!-- 使用 html2canvas 生成分享长图 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* 全局重置与基础样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    }
+
+    body {
+      background: #1a0e0b;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      color: #3d2b1f;
+    }
+
+    /* 主容器，模拟宣纸/古籍质感 */
+    .app-container {
+      max-width: 500px;
+      width: 100%;
+      background: #fcf6e8;
+      background-image: radial-gradient(circle at 20% 30%, rgba(180, 150, 100, 0.08) 0%, transparent 30%),
+                        radial-gradient(circle at 80% 70%, rgba(180, 150, 100, 0.08) 0%, transparent 30%);
+      border-radius: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px #b89e6b inset;
+      padding: 28px 22px 32px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    /* 装饰性边框纹理 */
+    .app-container::before {
+      content: "";
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      border: 1px solid rgba(180, 140, 70, 0.3);
+      border-radius: 24px;
+      pointer-events: none;
+    }
+
+    /* 通用标题 */
+    .title {
+      font-size: 26px;
+      font-weight: 700;
+      text-align: center;
+      color: #4d2e1b;
+      letter-spacing: 2px;
+      text-shadow: 1px 1px 0 rgba(200, 170, 120, 0.5);
+      margin-bottom: 8px;
+      font-family: 'STKaiti', 'KaiTi', '楷体', serif;
+    }
+
+    .subhead {
+      text-align: center;
+      font-size: 14px;
+      color: #7b5e42;
+      border-bottom: 1px dashed #c8ad7a;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    /* 状态面板 */
+    .panel {
+      display: none;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 密码页样式 */
+    .password-box {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+      padding: 20px 0;
+    }
+
+    .password-box input {
+      width: 100%;
+      padding: 16px 18px;
+      font-size: 18px;
+      text-align: center;
+      letter-spacing: 4px;
+      background: #f2e8d5;
+      border: 1px solid #b99f73;
+      border-radius: 60px;
+      outline: none;
+      color: #3d2b1f;
+      font-weight: 500;
+      box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .password-box input::placeholder {
+      color: #b8a68b;
+      letter-spacing: normal;
+      font-size: 16px;
+    }
+
+    .password-box .hint {
+      font-size: 13px;
+      color: #9b8465;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .btn {
+      background: #6f4e2e;
+      color: #fdf3e0;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 6px 0 #3f2c18, 0 8px 14px rgba(0, 0, 0, 0.3);
+      transition: all 0.1s ease;
+      font-family: 'STKaiti', 'KaiTi', serif;
+    }
+
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #3f2c18, 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn.secondary {
+      background: #c8ad7a;
+      color: #2d1e12;
+      box-shadow: 0 4px 0 #8b7042, 0 6px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn.secondary:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #8b7042, 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #3f2c18;
+      cursor: not-allowed;
+    }
+
+    /* 进度条 */
+    .progress-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #7b5e42;
+      font-weight: 500;
+    }
+
+    .progress-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: #e6d8c0;
+      border-radius: 10px;
+      margin: 0 12px;
+      overflow: hidden;
+      border: 1px solid #cfbc9b;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #b8883c, #dbb063);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+
+    /* 题目卡片 */
+    .question-card {
+      margin-bottom: 18px;
+    }
+
+    .q-text {
+      font-size: 17px;
+      line-height: 1.6;
+      font-weight: 600;
+      color: #3d2b1f;
+      margin-bottom: 18px;
+      padding: 0 4px;
+      font-family: 'STKaiti', 'KaiTi', serif;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option {
+      background: #f6efdf;
+      border: 1.5px solid #dac29b;
+      border-radius: 18px;
+      padding: 16px 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #2f1f12;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .option:active {
+      background: #e6d7bc;
+    }
+
+    .option.selected {
+      background: #e2cfab;
+      border-color: #8b6c3f;
+      box-shadow: 0 0 0 2px rgba(139, 108, 63, 0.2);
+    }
+
+    .option .letter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: #b39264;
+      color: #fdf3e0;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .option.selected .letter {
+      background: #6f4e2e;
+    }
+
+    /* 导航按钮 */
+    .nav-btns {
+      display: flex;
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .nav-btns .btn {
+      flex: 1;
+      padding: 14px 0;
+      font-size: 16px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #3f2c18;
+      cursor: not-allowed;
+    }
+
+    /* 结果页 */
+    .result-container {
+      text-align: center;
+    }
+
+    .rank-badge {
+      display: inline-block;
+      background: #4d2e1b;
+      color: #f7e9cf;
+      padding: 8px 28px;
+      border-radius: 40px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      border: 2px solid #b39264;
+      font-family: 'STKaiti', 'KaiTi', serif;
+    }
+
+    .rank-title {
+      font-size: 34px;
+      font-weight: 800;
+      color: #6f3f1a;
+      line-height: 1.2;
+      margin-bottom: 6px;
+      font-family: 'STKaiti', 'KaiTi', serif;
+    }
+
+    .rank-sub {
+      font-size: 16px;
+      color: #8b6c4a;
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+
+    .survival {
+      background: #e9dbc2;
+      border-radius: 40px;
+      padding: 10px 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #4d2e1b;
+      margin-bottom: 22px;
+      border: 1px dashed #a58658;
+    }
+
+    .tagline {
+      font-size: 18px;
+      font-weight: 600;
+      color: #4d2e1b;
+      margin-bottom: 14px;
+      font-family: 'STKaiti', 'KaiTi', serif;
+      padding: 0 10px;
+    }
+
+    .analysis-block {
+      background: #f2e8d5;
+      border-radius: 20px;
+      padding: 18px 16px;
+      text-align: left;
+      margin-bottom: 16px;
+      border-left: 6px solid #b39264;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #2f1f12;
+    }
+
+    .analysis-block strong {
+      color: #6f3f1a;
+    }
+
+    .theory-box {
+      background: #e6d8c0;
+      border-radius: 16px;
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #4d3a28;
+      margin-bottom: 22px;
+      border: 1px solid #c8ad7a;
+    }
+
+    .theory-box .theory-label {
+      font-weight: 700;
+      color: #6f4e2e;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* 分享按钮组 */
+    .share-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .share-btns .btn {
+      padding: 16px 0;
+      font-size: 17px;
+    }
+
+    /* 生成图片时的画板（隐藏） */
+    #capture-area {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 400px;
+      background: #fcf6e8;
+      padding: 28px 22px;
+      border-radius: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: #3d2b1f;
+      z-index: -1;
+    }
+
+    #capture-area .capture-rank {
+      text-align: center;
+    }
+
+    #capture-area .capture-badge {
+      display: inline-block;
+      background: #4d2e1b;
+      color: #f7e9cf;
+      padding: 6px 24px;
+      border-radius: 40px;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      border: 2px solid #b39264;
+    }
+
+    #capture-area .capture-title {
+      font-size: 30px;
+      font-weight: 800;
+      color: #6f3f1a;
+      margin-bottom: 4px;
+      font-family: 'STKaiti', 'KaiTi', serif;
+    }
+
+    #capture-area .capture-sub {
+      font-size: 14px;
+      color: #8b6c4a;
+      margin-bottom: 10px;
+    }
+
+    #capture-area .capture-survival {
+      background: #e9dbc2;
+      border-radius: 30px;
+      padding: 8px 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #4d2e1b;
+      margin-bottom: 14px;
+      border: 1px dashed #a58658;
+    }
+
+    #capture-area .capture-tagline {
+      font-size: 16px;
+      font-weight: 600;
+      color: #4d2e1b;
+      margin-bottom: 12px;
+      font-family: 'STKaiti', 'KaiTi', serif;
+    }
+
+    #capture-area .capture-analysis {
+      background: #f2e8d5;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: left;
+      margin-bottom: 12px;
+      border-left: 5px solid #b39264;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #2f1f12;
+    }
+
+    #capture-area .capture-theory {
+      background: #e6d8c0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #4d3a28;
+      border: 1px solid #c8ad7a;
+    }
+
+    /* 复制提示 */
+    .toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #3d2b1f;
+      color: #fcf6e8;
+      padding: 12px 28px;
+      border-radius: 40px;
+      font-size: 15px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 9999;
+      pointer-events: none;
+      white-space: nowrap;
+      border: 1px solid #b39264;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* 适配小屏幕 */
+    @media (max-width: 420px) {
+      .app-container {
+        padding: 22px 16px 26px;
+        border-radius: 28px;
+      }
+      .title {
+        font-size: 22px;
+      }
+      .q-text {
+        font-size: 15px;
+      }
+      .option {
+        padding: 14px 14px;
+        font-size: 14px;
+      }
+      .rank-title {
+        font-size: 28px;
+      }
+      .btn {
+        font-size: 16px;
+        padding: 14px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container" id="appContainer">
+    <!-- 密码验证面板 -->
+    <div id="panel-password" class="panel active">
+      <div class="title">宫斗段位测评</div>
+      <div class="subhead">你在后宫能活到第几集？</div>
+      <div class="password-box">
+        <input type="password" id="passwordInput" placeholder="请输入测试密码" maxlength="20">
+        <div class="hint">每个密码可测试 3 次</div>
+        <button class="btn" id="startBtn">开始测试</button>
+        <div id="passwordError" style="color: #b33; font-size: 13px; margin-top: 4px; min-height: 20px;"></div>
+      </div>
+    </div>
+
+    <!-- 答题面板 -->
+    <div id="panel-quiz" class="panel">
+      <div class="progress-area">
+        <span id="currentQDisplay">1/15</span>
+        <div class="progress-bar-bg">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span>宫斗段位</span>
+      </div>
+      <div class="question-card" id="questionCard">
+        <!-- 题目动态渲染 -->
+      </div>
+      <div class="nav-btns">
+        <button class="btn secondary" id="prevBtn" disabled>上一题</button>
+        <button class="btn" id="nextBtn" disabled>下一题</button>
+      </div>
+    </div>
+
+    <!-- 结果面板 -->
+    <div id="panel-result" class="panel">
+      <div class="result-container" id="resultContent">
+        <!-- 结果动态渲染 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 隐藏的截图区域（用于生成图片） -->
+  <div id="capture-area" style="display: none;">
+    <!-- 由JS动态填充 -->
+  </div>
+
+  <!-- 轻提示 -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    (function(){
+      // ---------- 数据定义 ----------
+      // 15道题目（纯古风，已按维度组织）
+      const QUESTIONS = [
+        // 维度1: 信息敏感度
+        { q: "你刚入宫，午间用膳时听到两个宫女在小声议论：“听说皇后娘娘和贵妃娘娘最近为了协理六宫的权柄，闹得很僵。”你会怎么做？",
+          options: [
+            { text: "默默记下，回去翻查内务府的簿子，摸清两位娘娘背后的家世和势力", score: 3 },
+            { text: "假装没听见，端着碗走开，不参与任何闲话", score: 2 },
+            { text: "凑过去搭话：“真的假的？你们还听说什么了？”", score: 1 },
+            { text: "直接去问掌事姑姑：“这后宫的事，到底谁说了算？”", score: 0 }
+          ]
+        },
+        { q: "晨起请安时，皇后当众夸了你绣的帕子好，但你注意到贵妃的脸色不太好看。散后回宫的路上，你会：",
+          options: [
+            { text: "私下差人给贵妃送一方帕子，附话：“这花样原是仿了娘娘宫里旧年的样子”", score: 3 },
+            { text: "什么都不做，觉得被皇后夸奖是好事", score: 0 },
+            { text: "找机会当面跟贵妃解释，说只是运气好，绣工粗浅", score: 2 },
+            { text: "赶紧去皇后宫里谢恩，表忠心", score: 1 }
+          ]
+        },
+        { q: "你发现同住一宫的嫔妃最近频繁被掌事姑姑叫去说话，而每次都不叫你。你会：",
+          options: [
+            { text: "先不动声色，观察半个月，看她的言行和穿戴有没有变化", score: 3 },
+            { text: "直接去问掌事姑姑：“我是不是哪里做得不好？”", score: 0 },
+            { text: "也找由头去掌事姑姑跟前多走动，增加自己的露脸机会", score: 2 },
+            { text: "暗中打听这个嫔妃的底细，看她有没有什么把柄可以留着", score: 1 }
+          ]
+        },
+        // 维度2: 结盟能力
+        { q: "宫里新来了一位贵人，性子清冷孤傲，不跟任何人来往。几位资历老的嫔妃都不喜欢她，想联手给她点颜色看看。你的态度是：",
+          options: [
+            { text: "主动接近她，看看她背后有没有靠山，能结交就结交", score: 3 },
+            { text: "保持中立，两边都不沾", score: 1 },
+            { text: "跟着大家一起冷落她，免得自己被牵连", score: 0 },
+            { text: "暗中给她递个消息，让她知道谁在针对她，先收一份人情", score: 2 }
+          ]
+        },
+        { q: "太后娘娘交办你一件差事，需要跟贵妃宫里的掌事太监对接。此人跟你一向不对付，甚至有些看你不顺眼。你会怎么推进？",
+          options: [
+            { text: "先找贵妃宫里跟你交好的宫女，让她帮忙递话", score: 3 },
+            { text: "直接按规矩递帖子过去，公事公办", score: 1 },
+            { text: "请自己的掌事姑姑出面去协调", score: 2 },
+            { text: "亲自登门找那个太监当面说", score: 0 }
+          ]
+        },
+        { q: "你发现另一位嫔妃在皇后面前把你的功劳说成了她的，而这个人恰好是皇后眼前的红人。你会：",
+          options: [
+            { text: "不动声色，找机会在皇后面前自然地提起当时的细节，让皇后自己品出味道", score: 3 },
+            { text: "直接找皇后告状，把证据摆出来", score: 0 },
+            { text: "私下找这个嫔妃聊，暗示你知道这件事，给她一个“还人情”的机会", score: 2 },
+            { text: "忍了，但从此不再跟她来往", score: 1 }
+          ]
+        },
+        // 维度3: 情绪伪装力
+        { q: "皇后在众人面前训斥了你一顿，但你心里清楚，这件事根本是皇后自己交代错了。此时你的第一反应是：",
+          options: [
+            { text: "面色如常，先认错：“是臣妾考虑不周，回去马上改”", score: 3 },
+            { text: "当场解释，把来龙去脉说清楚", score: 0 },
+            { text: "沉默不语，等散了之后找机会单独回话", score: 2 },
+            { text: "低头委屈，眼眶泛红", score: 1 }
+          ]
+        },
+        { q: "你最看不惯的那位嫔妃今天被晋了位份，皇后设宴，满宫的人都去道贺。席间大家让你也说两句祝福的话。你会：",
+          options: [
+            { text: "举杯微笑：“恭喜姐姐，往后还要多向姐姐讨教”", score: 3 },
+            { text: "敷衍一句“恭喜恭喜”，然后低头吃菜", score: 2 },
+            { text: "阴阳一句：“真是实至名归，毕竟姐姐费了那么多心思”", score: 0 },
+            { text: "找个由头提前离席", score: 1 }
+          ]
+        },
+        { q: "你辛苦筹办了三个月的赏花宴，最后功劳被贵妃宫里的人全揽了去。贵妃当着众人的面说：“这次多亏你们前期铺垫，本宫才能办得这么顺利。”你听了这句话，脸上会是什么表情？",
+          options: [
+            { text: "微笑点头：“能为娘娘效力，是臣妾的福分”", score: 3 },
+            { text: "面无表情，不接话", score: 1 },
+            { text: "冷笑一声，转身走开", score: 0 },
+            { text: "当场回一句：“那下次这种铺垫的活，娘娘宫里的人也来帮帮忙？”", score: 2 }
+          ]
+        },
+        // 维度4: 危机反杀力
+        { q: "有人告发你私通外臣，皇后下令让你禁足，配合彻查，但你确实没做过。你会：",
+          options: [
+            { text: "第一时间托人找宫外可信的关系，同时把所有往来书信、时辰记录整理清楚", score: 3 },
+            { text: "找皇后哭诉，说自己是被冤枉的", score: 0 },
+            { text: "安静配合调查，相信真相会水落石出", score: 1 },
+            { text: "暗中查是谁在背后搞你，准备反击", score: 2 }
+          ]
+        },
+        { q: "宫中要裁减一批宫人，你的名字在内。但你手里恰好有一件皇后不想让太后知道的旧事。你会：",
+          options: [
+            { text: "先不动声色，找好出路，临走前把那件事的隐患替皇后平了，让她欠你一个人情", score: 3 },
+            { text: "直接拿这件事去威胁皇后，要求把自己从名单里去掉", score: 0 },
+            { text: "按规矩领了银子出宫，不纠缠", score: 1 },
+            { text: "把那件事捅到太后那里，让皇后也难受", score: 2 }
+          ]
+        },
+        { q: "你被贬去了冷宫当差，所有人都觉得你翻不了身了。但冷宫恰好管着一批没人愿意碰、却可能有大用处的旧档。你会：",
+          options: [
+            { text: "全力整理这批旧档，把它变成自己翻身的筹码", score: 3 },
+            { text: "混日子，等机会再想办法调回去", score: 0 },
+            { text: "一边当差一边托关系，争取早点离开", score: 1 },
+            { text: "主动向上头请拨人手和银两，把冷宫做成自己的地盘", score: 2 }
+          ]
+        },
+        // 维度5: 权力边界感
+        { q: "后宫里，你的直属主位是贵妃，脾气暴但护短；而皇后表面温和，手段却极狠。两人向来不和。你手上有一件差事，需要皇后宫里的配合。你会先找谁？",
+          options: [
+            { text: "先向贵妃报备，让她知道你要去皇后那边走动", score: 3 },
+            { text: "直接去找皇后，觉得自己的主位管不着", score: 0 },
+            { text: "两边都不说，自己先私下推进", score: 1 },
+            { text: "去找皇后，但打的是贵妃的旗号", score: 2 }
+          ]
+        },
+        { q: "你发现宫里有一位“隐形人物”——端妃娘娘，平时不声不响，但所有重要的事都要经她的手。你跟她没什么交情。你会：",
+          options: [
+            { text: "找机会在规矩之内跟她建立联系，比如主动请教宫中旧例", score: 3 },
+            { text: "觉得没必要，做好自己的事就行", score: 0 },
+            { text: "托人引荐认识一下，但不会刻意维护", score: 1 },
+            { text: "观察她跟谁走得近，迂回建立关系", score: 2 }
+          ]
+        },
+        // 维度6: 长期忍耐力
+        { q: "你入宫三年，办事得力，但两次晋位份都被资历不如你的人抢了先。皇后每次都说“下次一定考虑你”。你会：",
+          options: [
+            { text: "继续做好手头的事，同时悄悄为自己铺后路，把主动权握在手里", score: 3 },
+            { text: "直接找皇后摊牌，要一个明确的说法", score: 1 },
+            { text: "消极怠工，让上头知道你不满意", score: 0 },
+            { text: "分析这两次落选的原因，针对性地补自己的短板，等下一次机会", score: 2 }
+          ]
+        }
+      ];
+
+      // 段位定义
+      const RANKS = [
+        { min: 38, max: 45, badge: "王者", title: "太后级操盘手", survival: "全剧终，笑到最后",
+          tagline: "你以为我在退让，其实我在布局",
+          analysis: "你是那种看起来不争不抢、实际上每一步都算得很准的人。别人在争一时之气的时候，你在看三步之后的棋。你深谙一个道理：真正的高手，不是赢在明面上，而是赢在让对方根本不知道你已经赢了。",
+          theory: "社会交换意识：你清楚每一段关系的本质是利益交换，不会把情感和利益混为一谈。权力依赖感知极强，你知道在权力结构里，谁依赖谁、谁离不开谁，才是真正的底牌。",
+          advice: "你的唯一风险是“太能忍”。适度让上头知道你也有选择权，反而会让你的位置更稳。"
+        },
+        { min: 30, max: 37, badge: "钻石", title: "贵妃级棋手", survival: "第60-70集，高位退场",
+          tagline: "我不主动害人，但谁也别想害我",
+          analysis: "你有很强的博弈意识，知道什么时候该进、什么时候该退。你不是不会耍手段，而是你有底线，不愿意把自己变成自己讨厌的那种人。你的强大在于：你能看透别人的套路，但你选择用更高明的方式回应。",
+          theory: "印象管理：你知道在不同人面前呈现不同的自己，但你并不是虚伪，而是成熟。你懂得保护自己的边界，同时也给别人留有余地。",
+          advice: "你的软肋是“心不够狠”。在关键时刻，该断的关系要断，该收的人情要收。"
+        },
+        { min: 22, max: 29, badge: "黄金", title: "妃级生存者", survival: "第40-50集，能活到中后期",
+          tagline: "我不搞事，但事来了我也不怕",
+          analysis: "你是一个理性的现实主义者。你不喜欢宫斗，但你也不傻。你知道怎么在复杂的环境里保住自己的一亩三分地。你的策略是：不主动出击，但谁惹我我就反击；不站队，但谁对我好我就记着。",
+          theory: "你在“危机反杀力”和“权力边界感”上表现不错，但在“结盟能力”和“长期忍耐力”上还有提升空间。你属于稳健型选手，爆发力一般，但持久力强。",
+          advice: "你需要一个“盟友”。单打独斗能保命，但想往上走，必须有人拉你一把。"
+        },
+        { min: 14, max: 21, badge: "白银", title: "嫔级老实人", survival: "第20-30集，被卷入斗争后出局",
+          tagline: "我只想安安静静过日子，怎么就这么难",
+          analysis: "你是一个善良、踏实的人，你的第一反应永远是“做好自己的事”。但问题在于：宫斗这种事，不是你想躲就能躲的。你不站队，不代表别人不会把你当作对手。你的困境在于，你总以为“不参与”就是安全的，但其实“没有立场”本身就是一种立场。",
+          theory: "你在“情绪伪装力”和“信息敏感度”上得分偏低。你容易把宫闱当学堂，以为好好做事就够了。但在权力结构里，信息差和关系网，往往比能力更重要。",
+          advice: "从今天开始，每周花一点时间做一件事：梳理你的“关系地图”——谁是你的盟友、谁是你的对手、谁是你需要争取的中间派。不需要耍手段，但要有意识。"
+        },
+        { min: 7, max: 13, badge: "青铜", title: "常在级炮灰", survival: "第5-10集，开局即淘汰",
+          tagline: "我还没搞清楚状况，就已经出局了",
+          analysis: "你是一个直来直去的人。你觉得“真诚”是最大的武器，但现实是，在权力结构里，真诚如果没有边界，就是别人拿捏你的入口。你容易被煽动、被利用、被当枪使，因为你太容易相信别人。",
+          theory: "你在“信息敏感度”和“权力边界感”上得分很低。你常常分不清谁是真正的话事人，也不擅长识别别人的真实意图。你总是等到事情发生了才反应过来。",
+          advice: "记住一句话：先观察，再表态。进入新环境的前三个月，少说话、多观察、不站队、不抱怨。等你搞清楚谁是谁，再决定怎么走。"
+        },
+        { min: 0, max: 6, badge: "黑铁", title: "官女子级祭天", survival: "第1-3集，片头曲还没放完就没了",
+          tagline: "我不是来宫斗的，我是来给编剧凑人头的",
+          analysis: "你是一个纯粹的人，纯粹到在宫斗剧里活不过片头曲。你的字典里没有“算计”两个字，别人说什么你都信，别人让你做什么你就做什么。你不是笨，你只是完全不愿意把心思花在人际关系上。",
+          theory: "你的“情绪伪装力”几乎为零——你开心不开心全写在脸上。这在信任度高的环境里是优点，但在复杂环境里，等于把你的底牌摊开给所有人看。",
+          advice: "你不需要学会宫斗，但你需要学会说“不”。这是你唯一需要掌握的生存技能。"
+        }
+      ];
+
+      // 密码相关
+      // 格式：密码 -> 剩余次数
+      const PASSWORD_STORE = {
+        "gongdou2026": 3,
+        "test123": 3,
+        "guimi666": 3,
+        "huangshang": 3
+      };
+
+      // 当前状态
+      let state = {
+        password: "",
+        remaining: 0,
+        currentQ: 0,
+        answers: new Array(QUESTIONS.length).fill(null),
+        totalScore: 0,
+        rank: null
+      };
+
+      // DOM 元素
+      const panelPassword = document.getElementById('panel-password');
+      const panelQuiz = document.getElementById('panel-quiz');
+      const panelResult = document.getElementById('panel-result');
+      const passwordInput = document.getElementById('passwordInput');
+      const startBtn = document.getElementById('startBtn');
+      const passwordError = document.getElementById('passwordError');
+      const currentQDisplay = document.getElementById('currentQDisplay');
+      const progressFill = document.getElementById('progressFill');
+      const questionCard = document.getElementById('questionCard');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const resultContent = document.getElementById('resultContent');
+      const toast = document.getElementById('toast');
+      const captureArea = document.getElementById('capture-area');
+
+      // 显示提示
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+      }
+
+      // 切换面板
+      function switchPanel(panel) {
+        panelPassword.classList.remove('active');
+        panelQuiz.classList.remove('active');
+        panelResult.classList.remove('active');
+        panel.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // 密码验证
+      startBtn.addEventListener('click', function() {
+        const pwd = passwordInput.value.trim();
+        passwordError.textContent = '';
+        if (!pwd) {
+          passwordError.textContent = '请输入密码';
+          return;
+        }
+        if (PASSWORD_STORE[pwd] === undefined) {
+          passwordError.textContent = '密码错误，请重新输入';
+          return;
+        }
+        if (PASSWORD_STORE[pwd] <= 0) {
+          passwordError.textContent = '该密码测试次数已用完';
+          return;
+        }
+        // 扣减次数
+        PASSWORD_STORE[pwd] -= 1;
+        state.password = pwd;
+        state.remaining = PASSWORD_STORE[pwd];
+        // 重置答题状态
+        state.currentQ = 0;
+        state.answers = new Array(QUESTIONS.length).fill(null);
+        state.totalScore = 0;
+        state.rank = null;
+        // 开始答题
+        switchPanel(panelQuiz);
+        renderQuestion();
+      });
+
+      // 回车键触发
+      passwordInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          startBtn.click();
+        }
+      });
+
+      // 渲染题目
+      function renderQuestion() {
+        const idx = state.currentQ;
+        const q = QUESTIONS[idx];
+        const selected = state.answers[idx];
+        currentQDisplay.textContent = (idx + 1) + '/' + QUESTIONS.length;
+        progressFill.style.width = ((idx) / QUESTIONS.length * 100) + '%';
+
+        let html = `<div class="q-text">${q.q}</div><div class="options">`;
+        q.options.forEach((opt, optIdx) => {
+          const letter = String.fromCharCode(65 + optIdx); // A, B, C, D
+          const isSelected = (selected === optIdx);
+          html += `<div class="option ${isSelected ? 'selected' : ''}" data-opt-index="${optIdx}">
+            <span class="letter">${letter}</span>
+            <span>${opt.text}</span>
+          </div>`;
+        });
+        html += `</div>`;
+        questionCard.innerHTML = html;
+
+        // 绑定选项点击
+        questionCard.querySelectorAll('.option').forEach(el => {
+          el.addEventListener('click', function() {
+            const optIndex = parseInt(this.dataset.optIndex);
+            state.answers[idx] = optIndex;
+            // 重新渲染当前题以更新选中状态
+            renderQuestion();
+            // 启用下一题
+            updateNavButtons();
+          });
+        });
+
+        updateNavButtons();
+      }
+
+      // 更新导航按钮状态
+      function updateNavButtons() {
+        const idx = state.currentQ;
+        const hasAnswer = state.answers[idx] !== null;
+
+        // 上一题：除非是第一题
+        prevBtn.disabled = (idx === 0);
+
+        // 下一题：必须已作答
+        if (idx === QUESTIONS.length - 1) {
+          nextBtn.textContent = '查看结果';
+        } else {
+          nextBtn.textContent = '下一题';
+        }
+        nextBtn.disabled = !hasAnswer;
+      }
+
+      // 上一题
+      prevBtn.addEventListener('click', function() {
+        if (state.currentQ > 0) {
+          state.currentQ--;
+          renderQuestion();
+        }
+      });
+
+      // 下一题 / 查看结果
+      nextBtn.addEventListener('click', function() {
+        const idx = state.currentQ;
+        if (state.answers[idx] === null) return; // 未作答
+
+        if (idx === QUESTIONS.length - 1) {
+          // 计算总分
+          let total = 0;
+          state.answers.forEach((ans, qIdx) => {
+            if (ans !== null) {
+              total += QUESTIONS[qIdx].options[ans].score;
+            }
+          });
+          state.totalScore = total;
+          // 确定段位
+          state.rank = RANKS.find(r => total >= r.min && total <= r.max) || RANKS[RANKS.length-1];
+          // 显示结果
+          showResult();
+        } else {
+          state.currentQ++;
+          renderQuestion();
+        }
+      });
+
+      // 显示结果
+      function showResult() {
+        const rank = state.rank;
+        const total = state.totalScore;
+
+        // 构建结果 HTML
+        let html = `
+          <div class="rank-badge">${rank.badge}段位</div>
+          <div class="rank-title">${rank.title}</div>
+          <div class="rank-sub">宫斗生存集数：${rank.survival}</div>
+          <div class="survival">总分：${total} / 45</div>
+          <div class="tagline">「${rank.tagline}」</div>
+          <div class="analysis-block">
+            <strong>🎭 宫斗画像</strong><br>${rank.analysis}
+          </div>
+          <div class="theory-box">
+            <span class="theory-label">📚 理论依据 · 社会交换 & 权力依赖</span>
+            ${rank.theory}
+          </div>
+          <div class="analysis-block">
+            <strong>💡 制胜锦囊</strong><br>${rank.advice}
+          </div>
+          <div class="share-btns">
+            <button class="btn secondary" id="saveImageBtn">📸 保存结果长图</button>
+            <button class="btn secondary" id="copyLinkBtn">🔗 复制分享链接</button>
+          </div>
+        `;
+        resultContent.innerHTML = html;
+        switchPanel(panelResult);
+
+        // 绑定保存图片
+        document.getElementById('saveImageBtn').addEventListener('click', function() {
+          generateAndDownloadImage();
+        });
+
+        // 绑定复制链接
+        document.getElementById('copyLinkBtn').addEventListener('click', function() {
+          copyShareLink();
+        });
+      }
+
+      // 生成图片并下载
+      function generateAndDownloadImage() {
+        const rank = state.rank;
+        const total = state.totalScore;
+
+        // 填充隐藏的截图区域
+        captureArea.innerHTML = `
+          <div class="capture-rank">
+            <div class="capture-badge">${rank.badge}段位</div>
+            <div class="capture-title">${rank.title}</div>
+            <div class="capture-sub">宫斗生存集数：${rank.survival}</div>
+            <div class="capture-survival">总分：${total} / 45</div>
+            <div class="capture-tagline">「${rank.tagline}」</div>
+            <div class="capture-analysis">
+              <strong>🎭 宫斗画像</strong><br>${rank.analysis}
+            </div>
+            <div class="capture-theory">
+              <strong>📚 理论依据</strong><br>${rank.theory}
+            </div>
+            <div class="capture-analysis" style="border-left-color:#c8ad7a;">
+              <strong>💡 制胜锦囊</strong><br>${rank.advice}
+            </div>
+            <div style="margin-top: 16px; text-align: center; font-size: 12px; color: #9b8465; border-top: 1px dashed #c8ad7a; padding-top: 10px;">
+              宫斗段位测评 · 你在后宫能活到第几集？
+            </div>
+          </div>
+        `;
+        captureArea.style.display = 'block';
+
+        // 使用 html2canvas 生成图片
+        html2canvas(captureArea, {
+          scale: 1.5,
+          backgroundColor: '#fcf6e8',
+          allowTaint: false,
+          useCORS: true,
+          logging: false
+        }).then(canvas => {
+          captureArea.style.display = 'none';
+          // 将 canvas 转换为图片并下载
+          const link = document.createElement('a');
+          link.download = `宫斗段位_${rank.title}_${Date.now()}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          showToast('长图已保存到相册/下载');
+        }).catch(err => {
+          captureArea.style.display = 'none';
+          console.error(err);
+          showToast('生成图片失败，请重试');
+        });
+      }
+
+      // 复制分享链接
+      function copyShareLink() {
+        // 生成一个包含结果信息的分享文本/链接
+        const rank = state.rank;
+        const total = state.totalScore;
+        // 构建一个模拟的分享链接（实际可换成带参数的URL）
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareText = `我在【宫斗段位测评】中测出了「${rank.badge}·${rank.title}」，总分${total}/45，生存集数：${rank.survival}。你是第几段？快来测测！`;
+        const shareUrl = `${baseUrl}?result=${encodeURIComponent(rank.badge)}&score=${total}`;
+        const fullText = `${shareText}\n${shareUrl}`;
+
+        // 尝试复制到剪贴板
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(fullText).then(() => {
+            showToast('分享链接已复制，快发给朋友吧');
+          }).catch(() => {
+            fallbackCopy(fullText);
+          });
+        } else {
+          fallbackCopy(fullText);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('分享链接已复制');
+        } catch (e) {
+          showToast('复制失败，请手动截图分享');
+        }
+        document.body.removeChild(textarea);
+      }
+
+      // 初始化：检查 URL 是否带结果参数（用于分享回显，简单处理）
+      // 注：完整回显需要更复杂的逻辑，这里仅做演示，实际可根据需要扩展。
+      window.addEventListener('load', function() {
+        // 可选：解析URL参数展示结果（如果用户通过分享链接打开）
+        // 为了简洁，暂不实现完整回显，但保留入口提示。
+      });
+
+    })();
+  </script>
+</body>
+</html>
