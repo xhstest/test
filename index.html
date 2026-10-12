@@ -6,6 +6,8 @@
   <title>宫斗段位测评 · 你在后宫能活到第几集？</title>
   <!-- 使用 html2canvas 生成分享长图 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* 全局重置与基础样式 */
     * {
@@ -572,6 +574,11 @@
 
   <script>
     (function(){
+      // ---------- Supabase 初始化 ----------
+      const SUPABASE_URL = 'https://qwkfbqxrxkxzopebdjcx.supabase.co';
+      const SUPABASE_ANON_KEY = 'sb_publishable_zlofcT0_prOwCJmKDbGHfg_l7MJQuLK';
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
       // ---------- 数据定义 ----------
       // 15道题目（纯古风，已按维度组织）
       const QUESTIONS = [
@@ -743,15 +750,6 @@
         }
       ];
 
-      // 密码相关
-      // 格式：密码 -> 剩余次数
-      const PASSWORD_STORE = {
-        "gongdou2026": 3,
-        "test123": 3,
-        "guimi666": 3,
-        "huangshang": 3
-      };
-
       // 当前状态
       let state = {
         password: "",
@@ -772,288 +770,4 @@
       const currentQDisplay = document.getElementById('currentQDisplay');
       const progressFill = document.getElementById('progressFill');
       const questionCard = document.getElementById('questionCard');
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
-      const resultContent = document.getElementById('resultContent');
-      const toast = document.getElementById('toast');
-      const captureArea = document.getElementById('capture-area');
-
-      // 显示提示
-      function showToast(msg) {
-        toast.textContent = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2200);
-      }
-
-      // 切换面板
-      function switchPanel(panel) {
-        panelPassword.classList.remove('active');
-        panelQuiz.classList.remove('active');
-        panelResult.classList.remove('active');
-        panel.classList.add('active');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-
-      // 密码验证
-      startBtn.addEventListener('click', function() {
-        const pwd = passwordInput.value.trim();
-        passwordError.textContent = '';
-        if (!pwd) {
-          passwordError.textContent = '请输入密码';
-          return;
-        }
-        if (PASSWORD_STORE[pwd] === undefined) {
-          passwordError.textContent = '密码错误，请重新输入';
-          return;
-        }
-        if (PASSWORD_STORE[pwd] <= 0) {
-          passwordError.textContent = '该密码测试次数已用完';
-          return;
-        }
-        // 扣减次数
-        PASSWORD_STORE[pwd] -= 1;
-        state.password = pwd;
-        state.remaining = PASSWORD_STORE[pwd];
-        // 重置答题状态
-        state.currentQ = 0;
-        state.answers = new Array(QUESTIONS.length).fill(null);
-        state.totalScore = 0;
-        state.rank = null;
-        // 开始答题
-        switchPanel(panelQuiz);
-        renderQuestion();
-      });
-
-      // 回车键触发
-      passwordInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          startBtn.click();
-        }
-      });
-
-      // 渲染题目
-      function renderQuestion() {
-        const idx = state.currentQ;
-        const q = QUESTIONS[idx];
-        const selected = state.answers[idx];
-        currentQDisplay.textContent = (idx + 1) + '/' + QUESTIONS.length;
-        progressFill.style.width = ((idx) / QUESTIONS.length * 100) + '%';
-
-        let html = `<div class="q-text">${q.q}</div><div class="options">`;
-        q.options.forEach((opt, optIdx) => {
-          const letter = String.fromCharCode(65 + optIdx); // A, B, C, D
-          const isSelected = (selected === optIdx);
-          html += `<div class="option ${isSelected ? 'selected' : ''}" data-opt-index="${optIdx}">
-            <span class="letter">${letter}</span>
-            <span>${opt.text}</span>
-          </div>`;
-        });
-        html += `</div>`;
-        questionCard.innerHTML = html;
-
-        // 绑定选项点击
-        questionCard.querySelectorAll('.option').forEach(el => {
-          el.addEventListener('click', function() {
-            const optIndex = parseInt(this.dataset.optIndex);
-            state.answers[idx] = optIndex;
-            // 重新渲染当前题以更新选中状态
-            renderQuestion();
-            // 启用下一题
-            updateNavButtons();
-          });
-        });
-
-        updateNavButtons();
-      }
-
-      // 更新导航按钮状态
-      function updateNavButtons() {
-        const idx = state.currentQ;
-        const hasAnswer = state.answers[idx] !== null;
-
-        // 上一题：除非是第一题
-        prevBtn.disabled = (idx === 0);
-
-        // 下一题：必须已作答
-        if (idx === QUESTIONS.length - 1) {
-          nextBtn.textContent = '查看结果';
-        } else {
-          nextBtn.textContent = '下一题';
-        }
-        nextBtn.disabled = !hasAnswer;
-      }
-
-      // 上一题
-      prevBtn.addEventListener('click', function() {
-        if (state.currentQ > 0) {
-          state.currentQ--;
-          renderQuestion();
-        }
-      });
-
-      // 下一题 / 查看结果
-      nextBtn.addEventListener('click', function() {
-        const idx = state.currentQ;
-        if (state.answers[idx] === null) return; // 未作答
-
-        if (idx === QUESTIONS.length - 1) {
-          // 计算总分
-          let total = 0;
-          state.answers.forEach((ans, qIdx) => {
-            if (ans !== null) {
-              total += QUESTIONS[qIdx].options[ans].score;
-            }
-          });
-          state.totalScore = total;
-          // 确定段位
-          state.rank = RANKS.find(r => total >= r.min && total <= r.max) || RANKS[RANKS.length-1];
-          // 显示结果
-          showResult();
-        } else {
-          state.currentQ++;
-          renderQuestion();
-        }
-      });
-
-      // 显示结果
-      function showResult() {
-        const rank = state.rank;
-        const total = state.totalScore;
-
-        // 构建结果 HTML
-        let html = `
-          <div class="rank-badge">${rank.badge}段位</div>
-          <div class="rank-title">${rank.title}</div>
-          <div class="rank-sub">宫斗生存集数：${rank.survival}</div>
-          <div class="survival">总分：${total} / 45</div>
-          <div class="tagline">「${rank.tagline}」</div>
-          <div class="analysis-block">
-            <strong>🎭 宫斗画像</strong><br>${rank.analysis}
-          </div>
-          <div class="theory-box">
-            <span class="theory-label">📚 理论依据 · 社会交换 & 权力依赖</span>
-            ${rank.theory}
-          </div>
-          <div class="analysis-block">
-            <strong>💡 制胜锦囊</strong><br>${rank.advice}
-          </div>
-          <div class="share-btns">
-            <button class="btn secondary" id="saveImageBtn">📸 保存结果长图</button>
-            <button class="btn secondary" id="copyLinkBtn">🔗 复制分享链接</button>
-          </div>
-        `;
-        resultContent.innerHTML = html;
-        switchPanel(panelResult);
-
-        // 绑定保存图片
-        document.getElementById('saveImageBtn').addEventListener('click', function() {
-          generateAndDownloadImage();
-        });
-
-        // 绑定复制链接
-        document.getElementById('copyLinkBtn').addEventListener('click', function() {
-          copyShareLink();
-        });
-      }
-
-      // 生成图片并下载
-      function generateAndDownloadImage() {
-        const rank = state.rank;
-        const total = state.totalScore;
-
-        // 填充隐藏的截图区域
-        captureArea.innerHTML = `
-          <div class="capture-rank">
-            <div class="capture-badge">${rank.badge}段位</div>
-            <div class="capture-title">${rank.title}</div>
-            <div class="capture-sub">宫斗生存集数：${rank.survival}</div>
-            <div class="capture-survival">总分：${total} / 45</div>
-            <div class="capture-tagline">「${rank.tagline}」</div>
-            <div class="capture-analysis">
-              <strong>🎭 宫斗画像</strong><br>${rank.analysis}
-            </div>
-            <div class="capture-theory">
-              <strong>📚 理论依据</strong><br>${rank.theory}
-            </div>
-            <div class="capture-analysis" style="border-left-color:#c8ad7a;">
-              <strong>💡 制胜锦囊</strong><br>${rank.advice}
-            </div>
-            <div style="margin-top: 16px; text-align: center; font-size: 12px; color: #9b8465; border-top: 1px dashed #c8ad7a; padding-top: 10px;">
-              宫斗段位测评 · 你在后宫能活到第几集？
-            </div>
-          </div>
-        `;
-        captureArea.style.display = 'block';
-
-        // 使用 html2canvas 生成图片
-        html2canvas(captureArea, {
-          scale: 1.5,
-          backgroundColor: '#fcf6e8',
-          allowTaint: false,
-          useCORS: true,
-          logging: false
-        }).then(canvas => {
-          captureArea.style.display = 'none';
-          // 将 canvas 转换为图片并下载
-          const link = document.createElement('a');
-          link.download = `宫斗段位_${rank.title}_${Date.now()}.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          showToast('长图已保存到相册/下载');
-        }).catch(err => {
-          captureArea.style.display = 'none';
-          console.error(err);
-          showToast('生成图片失败，请重试');
-        });
-      }
-
-      // 复制分享链接
-      function copyShareLink() {
-        // 生成一个包含结果信息的分享文本/链接
-        const rank = state.rank;
-        const total = state.totalScore;
-        // 构建一个模拟的分享链接（实际可换成带参数的URL）
-        const baseUrl = window.location.origin + window.location.pathname;
-        const shareText = `我在【宫斗段位测评】中测出了「${rank.badge}·${rank.title}」，总分${total}/45，生存集数：${rank.survival}。你是第几段？快来测测！`;
-        const shareUrl = `${baseUrl}?result=${encodeURIComponent(rank.badge)}&score=${total}`;
-        const fullText = `${shareText}\n${shareUrl}`;
-
-        // 尝试复制到剪贴板
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(fullText).then(() => {
-            showToast('分享链接已复制，快发给朋友吧');
-          }).catch(() => {
-            fallbackCopy(fullText);
-          });
-        } else {
-          fallbackCopy(fullText);
-        }
-      }
-
-      function fallbackCopy(text) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-          document.execCommand('copy');
-          showToast('分享链接已复制');
-        } catch (e) {
-          showToast('复制失败，请手动截图分享');
-        }
-        document.body.removeChild(textarea);
-      }
-
-      // 初始化：检查 URL 是否带结果参数（用于分享回显，简单处理）
-      // 注：完整回显需要更复杂的逻辑，这里仅做演示，实际可根据需要扩展。
-      window.addEventListener('load', function() {
-        // 可选：解析URL参数展示结果（如果用户通过分享链接打开）
-        // 为了简洁，暂不实现完整回显，但保留入口提示。
-      });
-
-    })();
-  </script>
-</body>
-</html>
+      const
